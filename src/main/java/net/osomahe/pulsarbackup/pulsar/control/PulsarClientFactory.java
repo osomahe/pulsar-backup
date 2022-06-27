@@ -45,7 +45,7 @@ public class PulsarClientFactory {
                 );
             }
 
-            this.pulsarClient = clientBuilder.build();
+            pulsarClient = clientBuilder.build();
         } catch (PulsarClientException e) {
             log.error("Cannot create PulsarClient instance for service url: " + serviceUrl, e);
         }
@@ -53,15 +53,17 @@ public class PulsarClientFactory {
 
     @Produces
     public PulsarClient getPulsarClient() {
-        if (this.pulsarClient == null) {
+        if (pulsarClient == null) {
             init();
         }
-        return this.pulsarClient;
+        return pulsarClient;
     }
 
     void shutdown(@Observes ShutdownEvent event) {
         try {
-            this.pulsarClient.close();
+            if (pulsarClient != null) {
+                pulsarClient.close();
+            }
         } catch (PulsarClientException e) {
             log.error("Cannot close pulsar client connection", e);
         }

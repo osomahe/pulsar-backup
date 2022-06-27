@@ -22,7 +22,7 @@ public class PulsarAdminFactory {
 
     private static final Logger log = Logger.getLogger(PulsarAdminFactory.class);
 
-    @ConfigProperty(name = "pulsar.admin.service-http-url")
+    @ConfigProperty(name = "pulsar.admin.url")
     Optional<String> serviceHttpUrl;
 
     @ConfigProperty(name = "pulsar.admin.tls-cert-file")
