@@ -35,6 +35,9 @@ public class DumpFacade {
     String readerName;
 
     public void dump(String pulsarUrl, String adminUrl, String[] namespaces, String outputFolder) throws Exception {
+        if (outputFolder == null) {
+            return;
+        }
         var path = Paths.get(outputFolder);
         if (!Files.exists(path)) {
             Files.createDirectory(path);

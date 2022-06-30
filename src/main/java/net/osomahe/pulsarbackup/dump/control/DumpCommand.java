@@ -21,7 +21,7 @@ public class DumpCommand implements Runnable {
     @CommandLine.Option(names = {"-n", "--namespaces"}, description = "namespaces to backup e.g. tenant/namespace")
     String[] namespaces;
 
-    @CommandLine.Option(names = {"-f", "--folder"}, description = "Path to folder to dump data to or restore from e.g. /opt/pulsar-backup")
+    @CommandLine.Option(names = {"-o", "--output"}, description = "Path to folder to dump data to e.g. /opt/pulsar-backup")
     String outputFolder;
 
     @Inject
@@ -84,7 +84,7 @@ public class DumpCommand implements Runnable {
         if (cmdValue != null) {
             return cmdValue;
         }
-        var oFolder = ConfigProvider.getConfig().getOptionalValue("backup.folder", String.class);
+        var oFolder = ConfigProvider.getConfig().getOptionalValue("backup.output", String.class);
         log.debugf("Backup folder via application.properties: %s", oFolder);
         if (oFolder.isEmpty()) {
             log.warnf("No folder set. There is nowhere to dump/restore.");
