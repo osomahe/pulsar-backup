@@ -101,6 +101,8 @@ public class PulsarAdminFactory {
     }
 
     void shutdown(@Observes ShutdownEvent event) {
-        this.pulsarAdmin.close();
+        if (this.pulsarAdmin != null) {
+            this.pulsarAdmin.close();
+        }
     }
 }
