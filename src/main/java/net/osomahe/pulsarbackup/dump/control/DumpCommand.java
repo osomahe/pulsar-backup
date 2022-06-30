@@ -2,6 +2,7 @@ package net.osomahe.pulsarbackup.dump.control;
 
 import io.quarkus.runtime.Quarkus;
 import net.osomahe.pulsarbackup.dump.boundary.DumpFacade;
+import net.osomahe.pulsarbackup.pulsar.boundary.PulsarFacade;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import picocli.CommandLine;
@@ -9,11 +10,12 @@ import picocli.CommandLine;
 import javax.inject.Inject;
 import java.util.Collections;
 
+
 @CommandLine.Command(name = "dump", mixinStandardHelpOptions = true)
 public class DumpCommand implements Runnable {
 
-    @CommandLine.Option(names = {"-p", "--pulsar"}, description = "Pulsar url e.g. pulsar://localhost:6650")
-    String pulsarUrl;
+    @CommandLine.Option(names = {"-c", "--client"}, description = "Pulsar url e.g. pulsar://localhost:6650")
+    String clientUrl;
 
     @CommandLine.Option(names = {"-a", "--admin"}, description = "Pulsar admin url e.g. http://localhost:8080")
     String adminUrl;
@@ -28,14 +30,16 @@ public class DumpCommand implements Runnable {
     Logger log;
 
     @Inject
-    DumpFacade facade;
+    DumpFacade facadeDump;
+
+    @Inject
+    PulsarFacade facadePulsar;
 
     @Override
     public void run() {
         try {
-            facade.dump(
-                    getPulsarUrl(pulsarUrl),
-                    getAdminUrl(adminUrl),
+            facadeDump.dump(
+                    facadePulsar.getPulsar(clientUrl, adminUrl),
                     getNamespaces(namespaces),
                     getFolder(outputFolder)
             );
@@ -57,26 +61,6 @@ public class DumpCommand implements Runnable {
             Quarkus.asyncExit(-1);
         }
         return oNamespaces.orElse(Collections.emptyList()).toArray(new String[0]);
-    }
-
-    private String getPulsarUrl(String cmdValue) {
-        log.debugf("Pulsar url via command line argument: %s", cmdValue);
-        if (cmdValue != null) {
-            return cmdValue;
-        }
-        var url = ConfigProvider.getConfig().getValue("pulsar.service-url", String.class);
-        log.debugf("Pulsar url via application.properties: %s", url);
-        return url;
-    }
-
-    private String getAdminUrl(String cmdValue) {
-        log.debugf("Pulsar admin url via command line argument: %s", cmdValue);
-        if (cmdValue != null) {
-            return cmdValue;
-        }
-        var url = ConfigProvider.getConfig().getValue("pulsar.admin.url", String.class);
-        log.debugf("Pulsar admin url via application.properties: %s", url);
-        return url;
     }
 
     private String getFolder(String cmdValue) {

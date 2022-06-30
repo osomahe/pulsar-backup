@@ -1,6 +1,6 @@
 package net.osomahe.pulsarbackup.dump.boundary;
 
-import org.apache.pulsar.client.admin.PulsarAdmin;
+import net.osomahe.pulsarbackup.pulsar.entity.Pulsar;
 import org.apache.pulsar.client.admin.PulsarAdminException;
 import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.PulsarClient;
@@ -25,16 +25,10 @@ public class DumpFacade {
     @Inject
     Logger log;
 
-    @Inject
-    PulsarClient pulsarClient;
-
-    @Inject
-    PulsarAdmin pulsarAdmin;
-
     @ConfigProperty(name = "pulsar.client-name")
-    String readerName;
+    String clientName;
 
-    public void dump(String pulsarUrl, String adminUrl, String[] namespaces, String outputFolder) throws Exception {
+    public void dump(Pulsar pulsar, String[] namespaces, String outputFolder) throws Exception {
         if (outputFolder == null) {
             return;
         }
@@ -44,30 +38,36 @@ public class DumpFacade {
         }
 
         for (var namespace : namespaces) {
-            dumpNamespace(pulsarUrl, adminUrl, namespace, outputFolder);
+            dumpNamespace(pulsar, namespace, outputFolder);
         }
 
     }
 
-    private void dumpNamespace(String pulsarUrl, String adminUrl, String namespace, String parentFolder) throws IOException, PulsarAdminException {
+    private void dumpNamespace(Pulsar pulsar, String namespace, String parentFolder) throws IOException, PulsarAdminException {
+        log.infof("Dumping namespace %s", namespace);
         var path = Paths.get(parentFolder, namespace);
         if (Files.exists(path)) {
             throw new IllegalStateException("Cannot dump namespace[%s] data. Folder already exists!".formatted(namespace));
         }
         Files.createDirectories(path);
 
-        var topics = pulsarAdmin.topics().getList(namespace);
+        var topics = pulsar.admin().topics().getList(namespace);
         for (var topic : topics) {
-            var messages = readTopic(topic);
+            if (topic.startsWith("non-persistent")) {
+                log.warnf("Will not dump non-persistent topic %s", topic);
+                continue;
+            }
+            var messages = readTopic(topic, pulsar.client());
             var fileName = topic.substring(topic.lastIndexOf("/") + 1);
             Files.write(Paths.get(path.toString(), fileName), messages);
         }
     }
 
 
-    private List<String> readTopic(String topicName) throws IOException {
+    private List<String> readTopic(String topicName, PulsarClient pulsarClient) throws IOException {
+        log.infof("Dumping topic :s", topicName);
         try (Reader<byte[]> reader = pulsarClient.newReader()
-                .readerName(readerName)
+                .readerName(clientName)
                 .topic(topicName)
                 .startMessageId(MessageId.earliest)
                 .create()) {
@@ -81,10 +81,9 @@ public class DumpFacade {
                 var key = message.getKeyBytes();
                 var encodedKey = key != null ? encoder.encodeToString(key) : "";
                 var value = message.getValue();
-                messages.add("%s|%s".formatted(encodedKey, encoder.encodeToString(value)));
+                messages.add("%s|%s|%s|%s".formatted(encodedKey, message.getEventTime(), message.getSequenceId(), encoder.encodeToString(value)));
             }
             return messages;
         }
     }
-
 }
