@@ -75,7 +75,7 @@ public class DumpCommand implements Runnable {
         var oFolder = ConfigProvider.getConfig().getOptionalValue("backup.output", String.class);
         log.debugf("Backup folder via application.properties: %s", oFolder);
         if (oFolder.isEmpty()) {
-            log.warnf("No folder set. There is nowhere to dump/restore.");
+            log.warnf("No folder set. There is nowhere to dump.");
             Quarkus.asyncExit(-1);
         }
         return oFolder.orElse(null);

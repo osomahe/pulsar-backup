@@ -1,15 +1,18 @@
+FROM maven:3.8-openjdk-17-slim as builder
+
+RUN mkdir /app
+COPY src /app/src
+COPY pom.xml /app
+WORKDIR /app
+RUN mvn clean package -Dquarkus.package.type=uber-jar
+
 FROM registry.access.redhat.com/ubi8/openjdk-17:1.11
 
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
 
-
-# We make four distinct layers so if there are application changes the library layers can be re-used
-COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 target/quarkus-app/*.jar /deployments/
-COPY --chown=185 target/quarkus-app/app/ /deployments/app/
-COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+COPY --from=builder --chown=185 /app/target/*-runner.jar /deployments/quarkus-runner.jar
 
 EXPOSE 8080
 USER 185
-ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
-ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+ENV JAVA_OPTS="-Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_APP_JAR="/deployments/quarkus-runner.jar"
