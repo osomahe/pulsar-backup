@@ -9,14 +9,14 @@ import org.apache.pulsar.client.api.PulsarClientException;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.TreeSet;
 
 
 @ApplicationScoped
 public class PulsarFacade {
 
-    private Set<Pulsar> pulsars = new TreeSet<>();
+    private Set<Pulsar> pulsars = new HashSet<>();
 
     @Inject
     PulsarClientService serviceClient;
@@ -38,8 +38,12 @@ public class PulsarFacade {
 
     void shutdown(@Observes ShutdownEvent event) throws PulsarClientException {
         for (var pulsar : pulsars) {
-            pulsar.client().close();
-            pulsar.admin().close();
+            if (pulsar.client() != null) {
+                pulsar.client().close();
+            }
+            if (pulsar.admin() != null) {
+                pulsar.admin().close();
+            }
         }
     }
 }

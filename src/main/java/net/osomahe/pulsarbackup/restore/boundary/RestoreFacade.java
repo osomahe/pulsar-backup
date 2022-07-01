@@ -44,7 +44,7 @@ public class RestoreFacade {
             if (f.isDirectory()) {
                 restoreTenant(f, force, pulsar);
             } else {
-                log.infof("Skipping tenant file %f because it is not a folder", f.getName());
+                log.infof("Skipping tenant file %s because it is not a folder", f.getName());
             }
         }
     }
@@ -55,7 +55,7 @@ public class RestoreFacade {
             if (f.isDirectory()) {
                 restoreNamespace(f, force, pulsar);
             } else {
-                log.infof("Skipping namespace file %f because it is not a folder", f.getName());
+                log.infof("Skipping namespace file %s because it is not a folder", f.getName());
             }
         }
     }
@@ -63,10 +63,10 @@ public class RestoreFacade {
     private void restoreNamespace(File folderNamespace, boolean force, Pulsar pulsar) throws PulsarAdminException, IOException {
         log.infof("Restoring namespace %s", folderNamespace.getName());
         for (var f : folderNamespace.listFiles()) {
-            if (f.isFile()) {
+            if (f.isFile() && !f.isHidden()) {
                 restoreTopic(f, force, pulsar);
             } else {
-                log.infof("Skipping topic file %f because it is not a file", f.getName());
+                log.infof("Skipping topic file %s because it is not a valid file", f.getName());
             }
         }
     }
@@ -98,12 +98,17 @@ public class RestoreFacade {
                 .create()) {
 
             for (var message : messages) {
-                producer.newMessage()
-                        .keyBytes(message.key())
-                        .eventTime(message.eventTime())
-                        .sequenceId(message.sequenceId())
-                        .value(message.value())
-                        .send();
+                var builder = producer.newMessage();
+                if (message.key() != null) {
+                    builder = builder.keyBytes(message.key());
+                }
+                if (message.eventTime() != null) {
+                    builder = builder.eventTime(message.eventTime());
+                }
+                if (message.sequenceId() != null) {
+                    builder = builder.sequenceId(message.sequenceId());
+                }
+                builder.value(message.value()).send();
             }
         }
     }

@@ -3,16 +3,22 @@ package net.osomahe.pulsarbackup.restore.entity;
 import java.util.Base64;
 
 
-public record RestoreMessage(byte[] key, long eventTime, long sequenceId, byte[] value) {
+public record RestoreMessage(byte[] key, Long eventTime, Long sequenceId, byte[] value) {
 
     public static RestoreMessage fromLine(String line) {
         var parts = line.split("\\|");
         var decoder = Base64.getDecoder();
+
+        var parsedKey = parts[0];
+        var parsedEventTime = Long.parseLong(parts[1]);
+        var parsedSequenceId = Long.parseLong(parts[2]);
+        var parsedValue = parts[3];
+
         return new RestoreMessage(
-                decoder.decode(parts[0]),
-                Long.parseLong(parts[1]),
-                Long.parseLong(parts[2]),
-                decoder.decode(parts[3])
+                parsedKey != null && parsedKey.length() > 0 ? decoder.decode(parts[0]) : null,
+                parsedEventTime > 0 ? parsedEventTime : null,
+                parsedSequenceId > 0 ? parsedSequenceId : null,
+                decoder.decode(parsedValue)
         );
     }
 }

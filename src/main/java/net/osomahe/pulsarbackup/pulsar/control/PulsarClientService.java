@@ -21,7 +21,7 @@ public class PulsarClientService {
     Logger log;
 
     public PulsarClient createPulsarClient(String clientUrl) throws PulsarClientException {
-        if (clientUrl == null || clientUrl.isEmpty() && oClientUrl.isEmpty()) {
+        if ((clientUrl == null || clientUrl.isEmpty()) && oClientUrl.isEmpty()) {
             log.warnf("Cannot init clientUrl! Command line argument is empty neither property pulsar.client-url is set.");
             return null;
         }

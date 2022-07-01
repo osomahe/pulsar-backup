@@ -26,6 +26,9 @@ public class DumpCommand implements Runnable {
     @CommandLine.Option(names = {"-o", "--output"}, description = "Path to folder to dump data to e.g. /opt/pulsar-backup")
     String outputFolder;
 
+    @CommandLine.Option(names = {"-f", "--force"}, description = "Write into topics even when they already exist")
+    Boolean force;
+
     @Inject
     Logger log;
 
@@ -41,7 +44,8 @@ public class DumpCommand implements Runnable {
             facadeDump.dump(
                     facadePulsar.getPulsar(clientUrl, adminUrl),
                     getNamespaces(namespaces),
-                    getFolder(outputFolder)
+                    getFolder(outputFolder),
+                    getForce(force)
             );
         } catch (Exception e) {
             log.errorf(e, "Cannot dump pulsar data");
@@ -75,5 +79,15 @@ public class DumpCommand implements Runnable {
             Quarkus.asyncExit(-1);
         }
         return oFolder.orElse(null);
+    }
+
+    private boolean getForce(Boolean cmdValue) {
+        log.debugf("Forcing write via command line argument: %s", cmdValue);
+        if (cmdValue != null) {
+            return cmdValue;
+        }
+        var force = ConfigProvider.getConfig().getValue("backup.force", Boolean.class);
+        log.debugf("Force write messages via application.properties: %s", force);
+        return force;
     }
 }

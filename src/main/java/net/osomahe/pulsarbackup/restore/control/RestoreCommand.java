@@ -23,7 +23,7 @@ public class RestoreCommand implements Runnable {
     @CommandLine.Option(names = {"-i", "--input"}, description = "Path to folder to restore data from e.g. /opt/pulsar-backup")
     String inputFolder;
 
-    @CommandLine.Option(names = {"-f", "--force"}, description = "Write into topics even hen they already exist")
+    @CommandLine.Option(names = {"-f", "--force"}, description = "Write into topics even when they already exist")
     Boolean force;
 
     @Inject

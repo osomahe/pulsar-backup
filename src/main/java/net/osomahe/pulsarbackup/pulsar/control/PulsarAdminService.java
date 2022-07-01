@@ -27,7 +27,7 @@ public class PulsarAdminService {
     public PulsarAdmin createPulsarAdmin(String adminUrl) throws PulsarClientException {
         var savedHandlers = saveLogHandlers();
 
-        if (adminUrl == null || adminUrl.isEmpty() && oAdminUrl.isEmpty()) {
+        if ((adminUrl == null || adminUrl.isEmpty()) && oAdminUrl.isEmpty()) {
             log.warnf("Cannot init adminUrl! Command line argument is empty neither property pulsar.admin-url is set.");
             return null;
         }

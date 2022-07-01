@@ -13,6 +13,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -28,7 +29,7 @@ public class DumpFacade {
     @ConfigProperty(name = "pulsar.client-name")
     String clientName;
 
-    public void dump(Pulsar pulsar, String[] namespaces, String outputFolder) throws Exception {
+    public void dump(Pulsar pulsar, String[] namespaces, String outputFolder, boolean force) throws Exception {
         if (outputFolder == null) {
             return;
         }
@@ -38,17 +39,14 @@ public class DumpFacade {
         }
 
         for (var namespace : namespaces) {
-            dumpNamespace(pulsar, namespace, outputFolder);
+            dumpNamespace(pulsar, namespace, outputFolder, force);
         }
 
     }
 
-    private void dumpNamespace(Pulsar pulsar, String namespace, String parentFolder) throws IOException, PulsarAdminException {
+    private void dumpNamespace(Pulsar pulsar, String namespace, String parentFolder, boolean force) throws IOException, PulsarAdminException {
         log.infof("Dumping namespace %s", namespace);
         var path = Paths.get(parentFolder, namespace);
-        if (Files.exists(path)) {
-            throw new IllegalStateException("Cannot dump namespace[%s] data. Folder already exists!".formatted(namespace));
-        }
         Files.createDirectories(path);
 
         var topics = pulsar.admin().topics().getList(namespace);
@@ -59,13 +57,13 @@ public class DumpFacade {
             }
             var messages = readTopic(topic, pulsar.client());
             var fileName = topic.substring(topic.lastIndexOf("/") + 1);
-            Files.write(Paths.get(path.toString(), fileName), messages);
+            Files.write(Paths.get(path.toString(), fileName), messages, force ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW);
         }
     }
 
 
     private List<String> readTopic(String topicName, PulsarClient pulsarClient) throws IOException {
-        log.infof("Dumping topic :s", topicName);
+        log.infof("Dumping topic %s", topicName);
         try (Reader<byte[]> reader = pulsarClient.newReader()
                 .readerName(clientName)
                 .topic(topicName)
