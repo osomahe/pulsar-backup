@@ -2,6 +2,7 @@ package net.osomahe.pulsarbackup.restore.boundary;
 
 import net.osomahe.pulsarbackup.pulsar.entity.Pulsar;
 import net.osomahe.pulsarbackup.restore.entity.RestoreMessage;
+import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.admin.PulsarAdminException;
 import org.apache.pulsar.client.api.CompressionType;
 import org.apache.pulsar.client.api.HashingScheme;
@@ -23,9 +24,11 @@ public class RestoreFacade {
 
     private static final Pattern TOPIC_PARTITION_PATTERN = Pattern.compile("\\-partition-\\d+");
 
-
     @ConfigProperty(name = "pulsar.client-name")
     String clientName;
+
+    @ConfigProperty(name = "backup.strip-partitions")
+    Boolean stripPartitions;
 
     @Inject
     Logger log;
@@ -77,11 +80,13 @@ public class RestoreFacade {
         var namespace = fileTopic.getParentFile().getName();
         var tenant = fileTopic.getParentFile().getParentFile().getName();
         var topicNameFull = "persistent://%s/%s/%s".formatted(tenant, namespace, topicName);
-        // strip partition signature
-        topicNameFull = TOPIC_PARTITION_PATTERN.matcher(topicNameFull).replaceAll("");
+        if (stripPartitions) {
+            // strip partition signature
+            topicNameFull = TOPIC_PARTITION_PATTERN.matcher(topicNameFull).replaceAll("");
+        }
         log.infof("Restoring topic %s", topicNameFull);
 
-        var numberOfEntries = pulsar.admin().topics().getInternalStats(topicNameFull).numberOfEntries;
+        var numberOfEntries = getNumberOfEntries(topicNameFull, namespace, tenant, pulsar.admin());
         if (numberOfEntries > 0 && !force) {
             log.warnf("Cannot restore topic %s because it contains %s entries", topicNameFull, numberOfEntries);
             return;
@@ -111,5 +116,17 @@ public class RestoreFacade {
                 builder.value(message.value()).send();
             }
         }
+    }
+
+    private long getNumberOfEntries(String topicNameFull, String namespace, String tenant, PulsarAdmin admin) throws PulsarAdminException {
+        if (admin.tenants().getTenants().contains(tenant)) {
+            var namespaceFull = "%s/%s".formatted(tenant, namespace);
+            if (admin.namespaces().getNamespaces(tenant).contains(namespaceFull)) {
+                if (admin.topics().getList(namespaceFull).contains(topicNameFull)) {
+                    return admin.topics().getInternalStats(topicNameFull).numberOfEntries;
+                }
+            }
+        }
+        return 0;
     }
 }
