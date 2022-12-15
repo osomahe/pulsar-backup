@@ -2,7 +2,9 @@ package net.osomahe.pulsarbackup.restore.control;
 
 import io.quarkus.runtime.Quarkus;
 import net.osomahe.pulsarbackup.pulsar.boundary.PulsarFacade;
+import net.osomahe.pulsarbackup.pulsar.entity.PulsarSchema;
 import net.osomahe.pulsarbackup.restore.boundary.RestoreFacade;
+import org.apache.pulsar.client.api.Schema;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import picocli.CommandLine;
@@ -26,6 +28,13 @@ public class RestoreCommand implements Runnable {
     @CommandLine.Option(names = {"-f", "--force"}, description = "Write into topics even when they already exist")
     Boolean force;
 
+    @CommandLine.Option(names = {"-sd", "--schema-dump"}, description = "Dump schema type.")
+    PulsarSchema schemaDump;
+
+    @CommandLine.Option(names = {"-sr", "--schema-restore"}, description = "Restore schema type.")
+    PulsarSchema schemaRestore;
+
+
     @Inject
     Logger log;
 
@@ -42,7 +51,9 @@ public class RestoreCommand implements Runnable {
             facadeRestore.restore(
                     facadePulsar.getPulsar(clientUrl, adminUrl),
                     getFolder(inputFolder),
-                    getForce(force)
+                    getForce(force),
+                    schemaDump,
+                    schemaRestore
             );
         } catch (Exception e) {
             log.errorf(e, "Cannot restore pulsar data");
