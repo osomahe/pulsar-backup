@@ -1,7 +1,7 @@
 package net.osomahe.pulsarbackup.restore.boundary;
 
 import net.osomahe.pulsarbackup.pulsar.entity.Pulsar;
-import net.osomahe.pulsarbackup.pulsar.entity.PulsarSchema;
+import net.osomahe.pulsarbackup.restore.entity.PulsarSchema;
 import net.osomahe.pulsarbackup.restore.entity.RestoreMessage;
 import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.admin.PulsarAdminException;
@@ -18,6 +18,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Base64;
@@ -131,7 +132,7 @@ public class RestoreFacade {
             var decoder = Base64.getDecoder();
 
             for (var message : messages) {
-                getBuilder(producer, message).value(decoder.decode(message.value())).send();
+                getBuilder(producer, message).value(decoder.decode(message.valueBase64())).send();
             }
         }
     }
@@ -148,7 +149,7 @@ public class RestoreFacade {
             var decoder = Base64.getDecoder();
 
             for (var message : messages) {
-                getBuilder(producer, message).value(new String(decoder.decode(message.value()))).send();
+                getBuilder(producer, message).value(new String(decoder.decode(message.valueBase64()), StandardCharsets.UTF_8)).send();
             }
         }
     }

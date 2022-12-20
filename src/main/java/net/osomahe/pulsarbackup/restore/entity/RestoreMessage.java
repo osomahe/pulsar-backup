@@ -3,7 +3,7 @@ package net.osomahe.pulsarbackup.restore.entity;
 import java.util.Base64;
 
 
-public record RestoreMessage(byte[] key, Long eventTime, Long sequenceId, String value) {
+public record RestoreMessage(byte[] key, Long eventTime, Long sequenceId, String valueBase64) {
 
     public static RestoreMessage fromLine(String line) {
         var parts = line.split("\\|");

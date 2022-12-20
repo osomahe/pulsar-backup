@@ -2,8 +2,8 @@ package net.osomahe.pulsarbackup.restore.control;
 
 import io.quarkus.runtime.Quarkus;
 import net.osomahe.pulsarbackup.pulsar.boundary.PulsarFacade;
-import net.osomahe.pulsarbackup.pulsar.entity.PulsarSchema;
 import net.osomahe.pulsarbackup.restore.boundary.RestoreFacade;
+import net.osomahe.pulsarbackup.restore.entity.PulsarSchema;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import picocli.CommandLine;

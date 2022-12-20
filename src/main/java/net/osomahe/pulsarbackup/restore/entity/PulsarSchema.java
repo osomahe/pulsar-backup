@@ -1,4 +1,4 @@
-package net.osomahe.pulsarbackup.pulsar.entity;
+package net.osomahe.pulsarbackup.restore.entity;
 
 public enum PulsarSchema {
 
