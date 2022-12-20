@@ -4,7 +4,6 @@ import io.quarkus.runtime.Quarkus;
 import net.osomahe.pulsarbackup.pulsar.boundary.PulsarFacade;
 import net.osomahe.pulsarbackup.pulsar.entity.PulsarSchema;
 import net.osomahe.pulsarbackup.restore.boundary.RestoreFacade;
-import org.apache.pulsar.client.api.Schema;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import picocli.CommandLine;
@@ -14,7 +13,6 @@ import javax.inject.Inject;
 
 @CommandLine.Command(name = "restore", mixinStandardHelpOptions = true)
 public class RestoreCommand implements Runnable {
-
 
     @CommandLine.Option(names = {"-c", "--client"}, description = "Pulsar url e.g. pulsar://localhost:6650")
     String clientUrl;
@@ -28,12 +26,8 @@ public class RestoreCommand implements Runnable {
     @CommandLine.Option(names = {"-f", "--force"}, description = "Write into topics even when they already exist")
     Boolean force;
 
-    @CommandLine.Option(names = {"-sd", "--schema-dump"}, description = "Dump schema type.")
-    PulsarSchema schemaDump;
-
-    @CommandLine.Option(names = {"-sr", "--schema-restore"}, description = "Restore schema type.")
-    PulsarSchema schemaRestore;
-
+    @CommandLine.Option(names = {"-s", "--schema"}, description = "Restore schema type. Valid values: ${COMPLETION-CANDIDATES}")
+    PulsarSchema schema;
 
     @Inject
     Logger log;
@@ -44,7 +38,6 @@ public class RestoreCommand implements Runnable {
     @Inject
     PulsarFacade facadePulsar;
 
-
     @Override
     public void run() {
         try {
@@ -52,8 +45,7 @@ public class RestoreCommand implements Runnable {
                     facadePulsar.getPulsar(clientUrl, adminUrl),
                     getFolder(inputFolder),
                     getForce(force),
-                    schemaDump,
-                    schemaRestore
+                    schema
             );
         } catch (Exception e) {
             log.errorf(e, "Cannot restore pulsar data");
