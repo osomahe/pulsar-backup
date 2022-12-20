@@ -45,7 +45,7 @@ public class RestoreCommand implements Runnable {
                     facadePulsar.getPulsar(clientUrl, adminUrl),
                     getFolder(inputFolder),
                     getForce(force),
-                    schema
+                    getSchema(schema)
             );
         } catch (Exception e) {
             log.errorf(e, "Cannot restore pulsar data");
@@ -74,5 +74,15 @@ public class RestoreCommand implements Runnable {
         var force = ConfigProvider.getConfig().getValue("backup.force", Boolean.class);
         log.debugf("Force write messages via application.properties: %s", force);
         return force;
+    }
+
+    private PulsarSchema getSchema(PulsarSchema cmdValue){
+        log.debugf("Setting schema via command line argument: %s", cmdValue);
+        if (cmdValue != null) {
+            return cmdValue;
+        }
+        var schema = ConfigProvider.getConfig().getValue("backup.schema", String.class);
+        log.debugf("Setting schema messages via application.properties: %s", schema);
+        return PulsarSchema.of(schema);
     }
 }
