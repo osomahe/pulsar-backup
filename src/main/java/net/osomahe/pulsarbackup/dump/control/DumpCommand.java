@@ -26,7 +26,7 @@ public class DumpCommand implements Runnable {
     @CommandLine.Option(names = {"-o", "--output"}, description = "Path to folder to dump data to e.g. /opt/pulsar-backup")
     String outputFolder;
 
-    @CommandLine.Option(names = {"-f", "--force"}, description = "Write into topics even when they already exist")
+    @CommandLine.Option(names = {"-f", "--force"}, description = "Delete a dump file if exists before dump started")
     Boolean force;
 
     @Inject

@@ -12,6 +12,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -55,15 +56,22 @@ public class DumpFacade {
                 log.warnf("Will not dump non-persistent topic %s", topic);
                 continue;
             }
-            var messages = readTopic(topic, pulsar.client());
-            var fileName = topic.substring(topic.lastIndexOf("/") + 1);
-            Files.write(Paths.get(path.toString(), fileName), messages, force ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW);
+            dumpTopicData(topic, pulsar.client(), path, force);
         }
     }
 
 
-    private List<String> readTopic(String topicName, PulsarClient pulsarClient) throws IOException {
+    private void dumpTopicData(String topicName, PulsarClient pulsarClient, Path folder, boolean force) throws IOException {
         log.infof("Dumping topic %s", topicName);
+        var fileName = topicName.substring(topicName.lastIndexOf("/") + 1);
+        var path = Paths.get(folder.toString(), fileName);
+        if (Files.exists(path)) {
+            if (force) {
+                Files.delete(path);
+            } else {
+                throw new IllegalStateException("Cannot dump data file: %s already exists.".formatted(path.toString()));
+            }
+        }
         try (Reader<byte[]> reader = pulsarClient.newReader()
                 .readerName(clientName)
                 .topic(topicName)
@@ -80,8 +88,12 @@ public class DumpFacade {
                 var encodedKey = key != null ? encoder.encodeToString(key) : "";
                 var value = message.getValue();
                 messages.add("%s|%s|%s|%s".formatted(encodedKey, message.getEventTime(), message.getSequenceId(), encoder.encodeToString(value)));
+                if (message.size() == 1000) {
+                    Files.write(path, messages, StandardOpenOption.CREATE);
+                    messages.clear();
+                }
             }
-            return messages;
+            Files.write(path, messages, StandardOpenOption.CREATE);
         }
     }
 }
