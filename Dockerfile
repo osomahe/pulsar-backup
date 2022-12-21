@@ -8,7 +8,7 @@ RUN mvn clean package -Dquarkus.package.type=uber-jar
 
 FROM registry.access.redhat.com/ubi8/openjdk-17:1.11
 
-ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' JAVA_OPTIONS='-XX:MaxRAMPercentage=75.0'
 
 COPY --from=builder --chown=185 /app/target/*-runner.jar /deployments/quarkus-runner.jar
 
