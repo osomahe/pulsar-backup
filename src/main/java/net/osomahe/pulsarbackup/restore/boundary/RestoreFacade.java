@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -87,11 +88,8 @@ public class RestoreFacade {
         var topicName = fileTopic.getName();
         var namespace = fileTopic.getParentFile().getName();
         var tenant = fileTopic.getParentFile().getParentFile().getName();
-        var topicNameFull = "persistent://%s/%s/%s".formatted(tenant, namespace, topicName);
-        if (stripPartitions) {
-            // strip partition signature
-            topicNameFull = TOPIC_PARTITION_PATTERN.matcher(topicNameFull).replaceAll("");
-        }
+        final var topicNameFull = getTopicNameFull(tenant, namespace, topicName);
+
         log.infof("Restoring topic %s", topicNameFull);
 
         var numberOfEntries = getNumberOfEntries(topicNameFull, namespace, tenant, pulsar.admin());
@@ -100,11 +98,38 @@ public class RestoreFacade {
             return;
         }
 
-        var messages = Files.readAllLines(fileTopic.toPath()).stream().map(RestoreMessage::fromLine).toList();
+        var messages = new ArrayList<RestoreMessage>(1_000);
+        Files.lines(fileTopic.toPath())
+                .map(RestoreMessage::fromLine)
+                .forEach(msg -> {
+                    messages.add(msg);
+                    if (messages.size() == 1_000) {
+                        produceMessages(topicNameFull, pulsar, messages, schema);
+                        messages.clear();
+                    }
+                });
 
-        switch (schema) {
-            case BYTES -> produceBytes(topicNameFull, pulsar, messages);
-            case STRING -> produceString(topicNameFull, pulsar, messages);
+        produceMessages(topicNameFull, pulsar, messages, schema);
+
+    }
+
+    private String getTopicNameFull(String tenant, String namespace, String topicName) {
+        var topicNameFull = "persistent://%s/%s/%s".formatted(tenant, namespace, topicName);
+        if (stripPartitions) {
+            // strip partition signature
+            topicNameFull = TOPIC_PARTITION_PATTERN.matcher(topicNameFull).replaceAll("");
+        }
+        return topicNameFull;
+    }
+
+    private void produceMessages(String topicNameFull, Pulsar pulsar, List<RestoreMessage> messages, PulsarSchema schema) {
+        try {
+            switch (schema) {
+                case BYTES -> produceBytes(topicNameFull, pulsar, messages);
+                case STRING -> produceString(topicNameFull, pulsar, messages);
+            }
+        } catch (PulsarClientException e) {
+            throw new RuntimeException(e);
         }
     }
 
