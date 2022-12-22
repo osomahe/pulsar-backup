@@ -15,9 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.List;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 
@@ -72,13 +71,14 @@ public class DumpFacade {
                 throw new IllegalStateException("Cannot dump data file: %s already exists.".formatted(path.toString()));
             }
         }
+        Files.createFile(path);
         try (Reader<byte[]> reader = pulsarClient.newReader()
                 .readerName(clientName)
                 .topic(topicName)
                 .startMessageId(MessageId.earliest)
                 .create()) {
-            List<String> messages = new ArrayList<>();
             var encoder = Base64.getEncoder();
+            int count = 0;
             while (reader.hasMessageAvailable()) {
                 var message = reader.readNext(1, TimeUnit.SECONDS);
                 if (message == null) {
@@ -87,13 +87,12 @@ public class DumpFacade {
                 var key = message.getKeyBytes();
                 var encodedKey = key != null ? encoder.encodeToString(key) : "";
                 var value = message.getValue();
-                messages.add("%s|%s|%s|%s".formatted(encodedKey, message.getEventTime(), message.getSequenceId(), encoder.encodeToString(value)));
-                if (message.size() == 1000) {
-                    Files.write(path, messages, StandardOpenOption.CREATE);
-                    messages.clear();
-                }
+                Files.write(path,
+                        Collections.singletonList("%s|%s|%s|%s".formatted(encodedKey, message.getEventTime(), message.getSequenceId(), encoder.encodeToString(value))),
+                        StandardOpenOption.APPEND);
+                count++;
             }
-            Files.write(path, messages, StandardOpenOption.CREATE);
+            log.infof("%s messages was dumped for topic %s", count, topicName);
         }
     }
 }
